@@ -314,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _drawer() {
     return Drawer(
-      child: Column(
+      child: ListView(
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: primaryBlue),
@@ -362,8 +362,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text("Logout"),
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text("Logout", style: TextStyle(color: Colors.red)),
             onTap: _showLogoutSheet,
           ),
         ],

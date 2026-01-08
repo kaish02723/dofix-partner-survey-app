@@ -1,3 +1,5 @@
+import 'package:dofix_partner_survey/views/auth/otp_verify_screen.dart';
+import 'package:dofix_partner_survey/views/auth/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -24,7 +26,9 @@ class MyMainApp extends StatelessWidget {
           initialRoute: '/',
           getPages: [
             GetPage(name: '/', page: () => SplashScreen()),
-            GetPage(name: '/login', page: () => const LoginScreen()),
+            GetPage(name: '/login', page: () => LoginScreen()),
+            GetPage(name: '/otp', page: () => OtpVerifyScreen(phone: '',)),
+            GetPage(name: '/register', page: () => RegisterScreen()),
           ],
         );
       },
