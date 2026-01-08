@@ -179,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       onTap: () {
         if (title == "Edit Profile") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const RegisterScreen()));
+              MaterialPageRoute(builder: (_) => RegisterScreen()));
         } else if (title == "Change Categories") {
           Navigator.push(context,
               MaterialPageRoute(builder: (_) => const CategorySelectionScreen()));
