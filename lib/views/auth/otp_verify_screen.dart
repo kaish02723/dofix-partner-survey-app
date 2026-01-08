@@ -1,6 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/auth/otp_controller.dart';
 import '../categories/category_selection_screen.dart';
 
 class OtpVerifyScreen extends StatefulWidget {
@@ -14,165 +16,121 @@ class OtpVerifyScreen extends StatefulWidget {
 
 class _OtpVerifyScreenState extends State<OtpVerifyScreen>
     with SingleTickerProviderStateMixin {
-  static const Color primaryColor = Color(0xFF3683AB);
-
-  late AnimationController _controller;
-  late Animation<double> _fade;
-  late Animation<Offset> _slide;
-
-  final List<TextEditingController> _otpControllers =
-  List.generate(6, (_) => TextEditingController());
-
-  int _seconds = 30;
-  Timer? _timer;
+  final OtpController controller = Get.put(OtpController());
 
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-
-    _fade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.25),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-
-    _controller.forward();
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _seconds = 30;
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_seconds == 0) {
-        timer.cancel();
-      } else {
-        setState(() => _seconds--);
-      }
-    });
+    controller.initAnimation(this);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _timer?.cancel();
-    for (var c in _otpControllers) {
-      c.dispose();
-    }
+    controller.disposeController();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context); // MediaQuery added
+    final mq = MediaQuery.of(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: FadeTransition(
-          opacity: _fade,
+          opacity: controller.fade,
           child: SlideTransition(
-            position: _slide,
+            position: controller.slide,
             child: Padding(
               padding: EdgeInsets.all(24.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // BACK
+                  // Back button
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: Icon(
                       Icons.arrow_back,
-                      color: primaryColor,
+                      color: OtpController.primaryColor,
                       size: 22.sp,
                     ),
                   ),
-
                   SizedBox(height: 16.h),
 
                   Text(
                     "OTP Verification",
                     style: TextStyle(
-                      color: primaryColor,
+                      color: OtpController.primaryColor,
                       fontSize: 22.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   SizedBox(height: 8.h),
 
                   Text(
                     "Enter the 6-digit code sent to +91 ${widget.phone}",
                     style: TextStyle(
-                      color: primaryColor.withOpacity(0.7),
+                      color: OtpController.primaryColor.withOpacity(0.7),
                       fontSize: 13.sp,
                     ),
                   ),
-
                   SizedBox(height: 36.h),
 
-                  // OTP BOXES
+                  // OTP boxes
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(6, (index) {
                       return _otpBox(index, mq.size.width);
                     }),
                   ),
-
                   SizedBox(height: 28.h),
 
-                  // TIMER / RESEND
+                  // Timer / Resend
                   Center(
-                    child: _seconds > 0
+                    child: Obx(() => controller.seconds.value > 0
                         ? Text(
-                      "Resend OTP in $_seconds sec",
+                      "Resend OTP in ${controller.seconds.value} sec",
                       style: TextStyle(
-                        color: primaryColor.withOpacity(0.6),
+                        color: OtpController.primaryColor.withOpacity(0.6),
                         fontSize: 13.sp,
                       ),
                     )
                         : TextButton(
-                      onPressed: _startTimer,
+                      onPressed: controller.startTimer,
                       child: Text(
                         "Resend OTP",
                         style: TextStyle(
-                          color: primaryColor,
+                          color: OtpController.primaryColor,
                           fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                    )),
                   ),
-
                   const Spacer(),
 
                   // VERIFY BUTTON
-                  InkWell(
+                  Obx(() => InkWell(
                     borderRadius: BorderRadius.circular(16.r),
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const CategorySelectionScreen(),
-                        ),
-                      );
-                    },
+                    onTap: controller.isButtonEnabled.value
+                        ? () {
+                      if (controller.validateOtp()) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const CategorySelectionScreen()),
+                        );
+                      }
+                    }
+                        : null,
                     child: Container(
                       height: 52.h,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: primaryColor,
+                        color: controller.isButtonEnabled.value
+                            ? OtpController.primaryColor
+                            : OtpController.primaryColor.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Center(
@@ -186,7 +144,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),
@@ -198,14 +156,14 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
 
   Widget _otpBox(int index, double screenWidth) {
     return SizedBox(
-      width: (screenWidth - 48.w) / 7, // MediaQuery based safe width
+      width: (screenWidth - 48.w) / 7,
       child: TextField(
-        controller: _otpControllers[index],
+        controller: controller.otpControllers[index],
         maxLength: 1,
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: primaryColor,
+          color: OtpController.primaryColor,
           fontSize: 18.sp,
           fontWeight: FontWeight.bold,
         ),
@@ -213,18 +171,18 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
           counterText: "",
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
-            borderSide:
-            BorderSide(color: primaryColor, width: 1.5.w),
+            borderSide: BorderSide(color: OtpController.primaryColor, width: 1.5.w),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
-            borderSide:
-            BorderSide(color: primaryColor, width: 2.w),
+            borderSide: BorderSide(color: OtpController.primaryColor, width: 2.w),
           ),
         ),
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {
             FocusScope.of(context).nextFocus();
+          } else if (value.isEmpty && index > 0) {
+            FocusScope.of(context).previousFocus();
           }
         },
       ),
